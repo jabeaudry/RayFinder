@@ -16,6 +16,17 @@
 #include <iostream>
 
 
+glm::vec3 calculateSunDirection(float timeOfDay) {
+	float azimuth = glm::radians(360.0f * timeOfDay);
+	float elevation = glm::radians(60.0f * cos(azimuth));
+
+	glm::vec3 sunDirection;
+	sunDirection.x = cos(elevation) * cos(azimuth);
+	sunDirection.y = sin(elevation);
+	sunDirection.z = cos(elevation) * sin(azimuth);
+
+	return sunDirection;
+}
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -83,7 +94,7 @@ int main()
 
 	// build and compile shaders
 	// -------------------------
-	Shader ourShader("res/shaders/shader.vert.glsl", "res/shaders/shader.frag.glsl");
+	Shader shader("res/shaders/shader.vert.glsl", "res/shaders/shader.frag.glsl");
 
 	// load models
 	// -----------
@@ -115,34 +126,46 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// don't forget to enable shader before setting uniforms
-		ourShader.use();
+		shader.use();
+
+		// Update the sun direction
+		float timeOfDay = static_cast<float>(glfwGetTime()) * 0.1f; // Adjust the multiplier to control the speed of the sun movement
+		glm::vec3 sunDirection = calculateSunDirection(timeOfDay);
+
+		// Set the directional light properties
+		shader.setVec3("dirLight.direction", sunDirection);
+		shader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
+		shader.setVec3("dirLight.diffuse", 0.8f, 0.8f, 0.8f);
+		shader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
 
 		// view/projection transformations
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
-		ourShader.setMat4("projection", projection);
-		ourShader.setMat4("view", view);
+		shader.setMat4("projection", projection);
+		shader.setMat4("view", view);
 
 		// render the room model
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-1.0f, -2.3f, 4.1f)); // translate it down so it's at the center of the scene
 		model = glm::scale(model, glm::vec3(1.1f, 1.1f, 1.1f));	// it's a bit too big for our scene, so scale it down
-		ourShader.setMat4("model", model);
-		room.Draw(ourShader);
+		shader.setMat4("model", model);
+		//float roomShininess = 32.0f; // Set this to your desired shininess value
+		//room.setShininess(roomShininess);
+		room.Draw(shader);
 
 		//// render the table model
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.28f,-2.21f, 0.23f)); // translate it down so it's at the center of the scene
 		model = glm::scale(model, glm::vec3(0.00199f, 0.00199f, 0.00199f));	// it's a bit too big for our scene, so scale it down
-		ourShader.setMat4("model", model);
-		table.Draw(ourShader);
+		shader.setMat4("model", model);
+		table.Draw(shader);
 
 		// render the plant model
 		//model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.25f, 539.5f, 0.1f)); // translate it down so it's at the center of the scene
 		model = glm::scale(model, glm::vec3(1.01f, 1.01f, 1.01f));	// it's a bit too big for our scene, so scale it down
-		ourShader.setMat4("model", model);
-		plant.Draw(ourShader);
+		shader.setMat4("model", model);
+		plant.Draw(shader);
 
 
 
@@ -157,6 +180,7 @@ int main()
 	glfwTerminate();
 	return 0;
 }
+
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
@@ -183,6 +207,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
 }
+
+
 
 // glfw: whenever the mouse moves, this callback is called
 // -------------------------------------------------------

@@ -40,6 +40,13 @@ public:
 		loadModel(path);
 	}
 
+	/*void setShininess(float shininess) {
+		for (unsigned int i = 0; i < meshes.size(); i++)
+		{
+			meshes[i].shininess = shininess;
+		}
+	}*/
+
 	// draws the model, and thus all its meshes
 	void Draw(Shader& shader)
 	{
@@ -175,6 +182,7 @@ private:
 	vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName)
 	{
 		vector<Texture> textures;
+
 		for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
 		{
 			aiString str;
