@@ -1,0 +1,10 @@
+glad.c
+x64
+.vs
+Project1/x64
+Project1/Debug
+Project1/glad.c
+Project1/Project1.vcxproj
+Project1/Project1.vcxproj.filters
+Project1/Project1.vcxproj.user
+Project1/src/vendor
