@@ -95,6 +95,7 @@ int main()
 	// build and compile shaders
 	// -------------------------
 	Shader shader("res/shaders/shader.vert.glsl", "res/shaders/shader.frag.glsl");
+	Shader depthShader("res/shaders/depthShader.vert.glsl", "res/shaders/depthShader.frag.glsl");
 
 	// load models
 	// -----------
@@ -102,9 +103,30 @@ int main()
 	Model room("res/obj/room/untitled.obj");
 	Model plant("res/obj/plant/Plant N310122.obj");
 
+	// Framebuffer obj and depth texture to storedepth map
+	unsigned int depthMapFBO;
+	glGenFramebuffers(1, &depthMapFBO);
 
-	// draw in wireframe
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	// Create a 2D texture for the depth map
+	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+	unsigned int depthMap;
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	GLfloat borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+	// Attach the depth map to the framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 
 	// render loop
 	// -----------
@@ -125,16 +147,41 @@ int main()
 		glClearColor(0.63f, 0.83f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// don't forget to enable shader before setting uniforms
-		shader.use();
-
 		// Update the sun direction
 		float timeOfDay = static_cast<float>(glfwGetTime()) * 0.1f; // Adjust the multiplier to control the speed of the sun movement
 		glm::vec3 sunDirection = calculateSunDirection(timeOfDay);
 
+		// 1. Render the depth map
+		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		depthShader.use();
+		// Set up the light's projection and view matrices
+		float near_plane = 1.0f;
+		float far_plane = 7.5f;
+		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+		glm::mat4 lightView = glm::lookAt(sunDirection * -2.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+		// Calculate the light-space matrix
+		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+		depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		// Render your scene with the depth shader
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		// 2. Render the scene with shadows
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		shader.use();
+		shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		shader.setInt("depthMap", 1);
+		// Set other shader uniforms and render your scene
+
+
 		// Set the directional light properties
 		shader.setVec3("dirLight.direction", sunDirection);
-		shader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
+		shader.setVec3("dirLight.ambient", 0.1f, 0.1f, 0.1f);
 		shader.setVec3("dirLight.diffuse", 0.8f, 0.8f, 0.8f);
 		shader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
 
@@ -149,9 +196,11 @@ int main()
 		model = glm::translate(model, glm::vec3(-1.0f, -2.3f, 4.1f)); // translate it down so it's at the center of the scene
 		model = glm::scale(model, glm::vec3(1.1f, 1.1f, 1.1f));	// it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
-		//float roomShininess = 32.0f; // Set this to your desired shininess value
-		//room.setShininess(roomShininess);
+		glDisable(GL_CULL_FACE); // note that we disable culling here since we render 'inside' the cube instead of the usual 'outside' which throws off the normal culling methods.
+		shader.setInt("reverse_normals", 1); // A small little hack to invert normals when drawing cube from the inside so lighting still works.
 		room.Draw(shader);
+		shader.setInt("reverse_normals", 0); // and of course disable it
+		glEnable(GL_CULL_FACE);
 
 		//// render the table model
 		model = glm::mat4(1.0f);
@@ -161,11 +210,13 @@ int main()
 		table.Draw(shader);
 
 		// render the plant model
-		//model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.25f, 539.5f, 0.1f)); // translate it down so it's at the center of the scene
-		model = glm::scale(model, glm::vec3(1.01f, 1.01f, 1.01f));	// it's a bit too big for our scene, so scale it down
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.25f, -1.2f, 0.23f)); // translate it down so it's at the center of the scene
+		model = glm::scale(model, glm::vec3(0.0018f, 0.0018f, 0.0018f));	// it's a bit too big for our scene, so scale it down
 		shader.setMat4("model", model);
+		glDisable(GL_CULL_FACE);
 		plant.Draw(shader);
+		glEnable(GL_CULL_FACE);
 
 
 
@@ -174,6 +225,9 @@ int main()
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+
+	glDeleteFramebuffers(1, &depthMapFBO);
+	glDeleteTextures(1, &depthMap);
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------
