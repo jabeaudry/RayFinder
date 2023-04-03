@@ -1,7 +1,12 @@
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
+
+
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
-
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -26,9 +31,6 @@
 #define CLAMP(x, upper, lower) (max(upper, min(x, lower)))
 
 
-float latitude = 45.499630f;
-float longitude = -73.576073f;
-
 
 float startHour = 0.0f;
 float startMinute = 0.0f;
@@ -37,6 +39,18 @@ glm::vec4 skyColour;
 float cosZenith;
 float interpolationSpeed = 0.01f; // Adjust this value to control the color transition speed
 
+//gui variables
+bool visualizeScene = false;
+int windowDirection = 1;
+float latitude = 45.499630f;
+float longitude = -73.576073f;
+int yday = 175;
+bool timeOfDayOnly = false;
+float selectedTime = 0.0f;
+bool seeVisualizeSceneOptions = true;
+float currentTime = 0.0f;
+float timeForced = 0.0f;
+float totalLight = -1.0f;
 
 void calculateSkyColor(float zenith);
 
@@ -44,6 +58,19 @@ glm::vec3 calculatesunPosition(float latitude, float longitude, float time) {
 	// For simplicity, we'll use a basic implementation of the SPA algorithm
 	int yday = 175;
 	float gha = 15.0f * (12.0f - time); // Greenwich Hour Angle
+	float addedAngle = 0;
+	if (windowDirection == 2) {
+		addedAngle += 90;
+	}
+	else if (windowDirection == 3) {
+		addedAngle += 180;
+	}
+	else if (windowDirection == 4) {
+		addedAngle += 270;
+	}
+	else if (windowDirection == 1) {
+		addedAngle += 0;
+	}
 	float declination = 23.45f * sin(glm::radians(360.0f * (284.0f + yday) / 365.0f)); // Declination angle
 
 	float latRad = glm::radians(latitude);
@@ -58,17 +85,34 @@ glm::vec3 calculatesunPosition(float latitude, float longitude, float time) {
 	// Calculate the solar azimuth angle
 	float sinAzimuth = cos(decRad) * sin(glm::radians(gha)) / sin(zenith);
 	float cosAzimuth = (cosZenith - sin(latRad) * sin(zenith)) / (cos(latRad) * cos(zenith));
-	float azimuth = glm::atan(sinAzimuth, cosAzimuth);
+	float azimuth = glm::atan(sinAzimuth, cosAzimuth) ;
 
 	// Modify the azimuth angle to make the sun's movement more visually circular
-	azimuth += glm::radians(180.0f - longitude);
+	azimuth += glm::radians(180.0f - longitude) ;
 
-	float distance = 5.0f; // Set an arbitrary distance for the sun
+	float distance = 10.0f; // Set an arbitrary distance for the sun
+
+	// Adjust the solar azimuth angle based on the window orientation
+	switch (windowDirection) {
+	case 1:
+		break;
+	case 2:
+		azimuth += glm::radians(90.0f);
+		break;
+	case 3:
+		azimuth += glm::radians(180.0f);
+		break;
+	case 4:
+		azimuth += glm::radians(270.0f);
+		break;
+	}
+
+
 
 	glm::vec3 sunPosition;
-	sunPosition.x = distance * cos(zenith) * cos(azimuth);
+	sunPosition.x = distance* cos(zenith) * cos(azimuth);
 	sunPosition.y = distance * sin(zenith);
-	sunPosition.z = distance * cos(zenith) * sin(azimuth);
+	sunPosition.z = -distance * cos(zenith) * sin(azimuth);
 
 	std::cout << sunPosition.z << "     " << sunPosition.y << std::endl;
 
@@ -110,8 +154,8 @@ void interpolateSkyColor(glm::vec4 targetSkyColor, float interpolationSpeed) {
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+//void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 
 // settings
@@ -119,7 +163,14 @@ const unsigned int SCR_WIDTH = 1200;
 const unsigned int SCR_HEIGHT = 800;
 
 // camera
-Camera camera(glm::vec3(1.1f, 1.80f, -0.35f));
+Camera camera(glm::vec3(1.1f, 1.80f, -0.35f));   //for prod
+//Camera camera(glm::vec3(1.1f, 21.80f, -0.35f));   //for testing
+
+
+
+
+
+
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -137,7 +188,7 @@ unsigned int planeVAO;
 
 // renders the 3D scene
 // --------------------
-void renderScene(Shader& shader, Model& room, Model& table, Model& plant, const glm::vec3& lightPos, const glm::mat4& lightSpaceMatrix)
+void renderScene(Shader_& shader, Model& room, Model& table, Model& plant, const glm::vec3& lightPos, const glm::mat4& lightSpaceMatrix)
 
 {
 
@@ -186,6 +237,7 @@ void renderScene(Shader& shader, Model& room, Model& table, Model& plant, const 
 
 int main()
 {
+
 	// glfw: initialize and configure
 	// ------------------------------
 	glfwInit();
@@ -208,11 +260,11 @@ int main()
 	}
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetCursorPosCallback(window, mouse_callback);
-	glfwSetScrollCallback(window, scroll_callback);
+	//glfwSetCursorPosCallback(window, mouse_callback);
+	//glfwSetScrollCallback(window, scroll_callback);
 
 	// tell GLFW to capture our mouse
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	// glad: load all OpenGL function pointers
 	// ---------------------------------------
@@ -229,13 +281,12 @@ int main()
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
 
-	// build and compile shaders
-	// -------------------------
-	Shader shader("res/shaders/shader.vert.glsl", "res/shaders/shader.frag.glsl");
-	Shader depthShader("res/shaders/depthShader.vert.glsl", "res/shaders/depthShader.frag.glsl");
+	// Shaders
+	// -----------------------------
+	Shader_ shader("res/shaders/shader.vert.glsl", "res/shaders/shader.frag.glsl");
+	Shader_ depthShader("res/shaders/depthShader.vert.glsl", "res/shaders/depthShader.frag.glsl");
 
 	// load models
-	// -----------
 	Model table("res/obj/table/OBJ+MTL.obj");
 	Model room("res/obj/room/untitled.obj");
 	Model plant("res/obj/plant/Plant N310122.obj");
@@ -299,102 +350,190 @@ int main()
 
 
 
-
-
-
-
+	// ImGUI setup
+	// ------------------
+		
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui::StyleColorsDark();
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 330");
 
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
+
 	{
-		// per-frame time logic
-		// --------------------
-		float currentFrame = static_cast<float>(glfwGetTime());
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
 
-		// input
-		// -----
-		processInput(window);
+			// per-frame time logic
+			// --------------------
+			float currentFrame = static_cast<float>(glfwGetTime());
+			deltaTime = currentFrame - lastFrame;
+			lastFrame = currentFrame;
 
-		calculateSkyColor(glm::acos(cosZenith));
+			// input
+			// -----
+			processInput(window);
 
-		// Calculate the sun direction based on the currentTimeInfo
-		glm::vec3 sunPosition = calculatesunPosition(latitude, longitude, startHour + startMinute);
+			calculateSkyColor(glm::acos(cosZenith));
 
-		// render
-		// ------
-		glClearColor(skyColour.r, skyColour.g, skyColour.b, skyColour.a);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			// Calculate the sun direction based on the currentTimeInfo
+			currentTime = startHour + startMinute;
+			glm::vec3 sunPosition = calculatesunPosition(latitude, longitude, currentTime);
 
-		if (startMinute >= 0.6f) {
-			if (startHour >= 23.0f) {
-				startMinute = 0.00f;
-				startHour = 0.0f;
+			// render
+			// ------
+			glClearColor(skyColour.r, skyColour.g, skyColour.b, skyColour.a);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+
+			// imgui
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+
+
+			if (startMinute >= 0.6f) {
+				if (startHour >= 23.0f) {
+					startMinute = 0.00f;
+					startHour = 0.0f;
+				}
+				else {
+					startHour += 1.0f;
+					startMinute = 0.0f;
+				}
 			}
 			else {
-				startHour += 1.0f;
-				startMinute = 0.0f;
+				startMinute += 0.05f;
 			}
-		}
-		else {
-			startMinute += 0.05f;
-		}
-		
-
-		std::this_thread::sleep_for(std::chrono::milliseconds(16));
-
-		// 1. Render the depth map
-
-		// Set up the light's projection and view matrices
-		float near_plane =1.0f;
-		float far_plane = 20.0f;
-		glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, near_plane, far_plane);
-
-		glm::vec3 sunDirection = glm::normalize( camera.Position-sunPosition);
-		glm::mat4 lightView = glm::lookAt(sunPosition, glm::vec3(0.0), glm::vec3(0.0f, 1.0f, 0.0f));
-
-		// Calculate the light-space matrix
-		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-		
-		// Render your scene with the depth shader
-		depthShader.use();
-	
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-		glClear(GL_DEPTH_BUFFER_BIT);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D,4);
-		glCullFace(GL_FRONT);
-		renderScene(depthShader, room, table, plant, sunPosition, lightSpaceMatrix);
-		glCullFace(GL_BACK);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		// reset viewport
-		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		// 2. Render the scene with shadows
-		shader.use();
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-		glm::mat4 view = camera.GetViewMatrix();
-		shader.setMat4("projection", projection);
-		shader.setMat4("view", view);
-		// set light uniforms
-		shader.setVec3("viewPos", camera.Position);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D,4);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
-		renderScene(shader, room, table, plant, sunPosition, lightSpaceMatrix);
 
 
-		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-		// -------------------------------------------------------------------------------
-		glfwSwapBuffers(window);
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(16));
+
+			// 1. Render the depth map
+
+			// Set up the light's projection and view matrices
+			float near_plane = 1.0f;
+			float far_plane = 20.0f;
+			glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, near_plane, far_plane);
+
+			glm::vec3 sunDirection = glm::normalize(-sunPosition);
+			glm::mat4 lightView = glm::lookAt(sunPosition,glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			// Calculate the light-space matrix
+			glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+			// Render your scene with the depth shader
+			depthShader.use();
+
+			glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+			glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+			glClear(GL_DEPTH_BUFFER_BIT);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, 4);
+			glCullFace(GL_FRONT);
+			renderScene(depthShader, room, table, plant, sunPosition, lightSpaceMatrix);
+			glCullFace(GL_BACK);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+			// reset viewport
+			glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			// 2. Render the scene with shadows
+			shader.use();
+			glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+			glm::mat4 view = camera.GetViewMatrix();
+			shader.setMat4("projection", projection);
+			shader.setMat4("view", view);
+			// set light uniforms
+			shader.setVec3("viewPos", camera.Position);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, 4);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, depthMap);
+			renderScene(shader, room, table, plant, sunPosition, lightSpaceMatrix);
+
+			ImGui::Begin("RayFinder Interface");
+
+			
+			if (seeVisualizeSceneOptions) {
+				ImGui::Text("Select your window setup!");
+				ImGui::Text("");
+				ImGui::Text("Window orientation!");
+				bool isChanged = false;
+				ImGui::RadioButton("North", &windowDirection,1);\
+				ImGui::RadioButton("West", &windowDirection,4);
+				ImGui::RadioButton("East", &windowDirection, 2);
+				ImGui::RadioButton("South", &windowDirection, 3);
+
+				ImGui::Text("");
+
+				ImGui::InputInt("Day",&yday, 1, 10, 1);
+				ImGui::InputFloat("Lat", &latitude, 1, 2, "%.4f", 0);
+				ImGui::InputFloat("Long", &longitude, 1, 2, "%.4f", 0);
+
+				ImGui::Text("");
+
+				ImGui::Checkbox("View at specific time only", &timeOfDayOnly);
+				if (timeOfDayOnly) {
+					ImGui::InputFloat("Time", &timeForced, 1, 2, "%.2f", 0);
+				}
+				ImGui::Text("");
+				if (ImGui::Button("Visualize scene")) {
+					visualizeScene = true;
+					seeVisualizeSceneOptions = false;
+				}
+			}
+			else {
+				ImGui::Text("Currently running...");
+				ImGui::Text("");
+				ImGui::Text("Time: %f", currentTime);
+				ImGui::Text("");
+				if (!timeOfDayOnly) {
+					ImGui::Text("This window provides: "); 
+					if (totalLight < 3 && totalLight >= 0) {
+						ImGui::Text("Shade");
+					}
+					else if (totalLight >= 3 && totalLight < 6) {
+						ImGui::Text("Part Sun");
+					}
+					else if (totalLight >= 6) {
+						ImGui::Text("Full Sun");
+					}
+					else if (totalLight < 0) {
+						ImGui::Text("Calculating...");
+					}
+					ImGui::Text("");
+				}
+				
+				if (ImGui::Button("Start over")) {
+					visualizeScene = false;
+					seeVisualizeSceneOptions = true;
+					totalLight = -1.0f;
+					currentTime = 0.0f;
+				}
+			}
+			ImGui::End();
+			ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+			// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
+			// -------------------------------------------------------------------------------
+			glfwSwapBuffers(window);
+
+		// glfw: swap buffers an poll IO events (keys pressed/released, mouse moved etc.)
+		// ---------w);
 		glfwPollEvents();
 	}
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+
 
 	glDeleteFramebuffers(1, &depthMapFBO);
 	glDeleteTextures(1, &depthMap);
@@ -439,28 +578,28 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 // -------------------------------------------------------
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
-	float xpos = static_cast<float>(xposIn);
-	float ypos = static_cast<float>(yposIn);
+	//float xpos = static_cast<float>(xposIn);
+	//float ypos = static_cast<float>(yposIn);
 
-	if (firstMouse)
-	{
-		lastX = xpos;
-		lastY = ypos;
-		firstMouse = false;
-	}
+	//if (firstMouse)
+	//{
+	//	lastX = xpos;
+	//	lastY = ypos;
+	//	firstMouse = false;
+	//}
 
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+	//float xoffset = xpos - lastX;
+	//float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
 
-	lastX = xpos;
-	lastY = ypos;
+	//lastX = xpos;
+	//lastY = ypos;
 
-	camera.ProcessMouseMovement(xoffset, yoffset);
+	//camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ----------------------------------------------------------------------
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	camera.ProcessMouseScroll(static_cast<float>(yoffset));
+	//camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }

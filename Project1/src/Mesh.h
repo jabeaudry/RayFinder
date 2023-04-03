@@ -31,7 +31,7 @@ struct Vertex {
 	float m_Weights[MAX_BONE_INFLUENCE];
 };
 
-struct Texture {
+struct Texture_ {
 	unsigned int id;
 	string type;
 	string path;
@@ -42,12 +42,12 @@ public:
 	// mesh Data
 	vector<Vertex>       vertices;
 	vector<unsigned int> indices;
-	vector<Texture>      textures;
+	vector< Texture_>      textures;
 	//float shininess;
 	unsigned int VAO;
 
 	// constructor
-	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures)
+	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector< Texture_> textures)
 	{
 		this->vertices = vertices;
 		this->indices = indices;
@@ -58,7 +58,7 @@ public:
 	}
 
 	// render the mesh
-	void Draw(Shader& shader)
+	void Draw(Shader_& shader)
 	{
 		// bind appropriate textures
 		unsigned int diffuseNr = 1;
