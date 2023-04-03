@@ -11,17 +11,15 @@ out vec4 FragPosLightSpace;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-uniform vec3 dirLightDirection;
 uniform mat4 lightSpaceMatrix;
 
 void main()
 {
    
         FragPos = vec3(model * vec4(aPos, 1.0));
-        Normal = mat3(transpose(inverse(model))) * aNormal;
-        TexCoords = aTexCoords;    
-        gl_Position = projection * view * model * vec4(aPos, 1.0);
-        //calculate fragment's position in light space
-        FragPosLightSpace = lightSpaceMatrix * model * vec4(aPos, 1.0);
+       Normal = transpose(inverse(mat3(model))) * aNormal;
+       TexCoords = aTexCoords;
+       FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
+       gl_Position = projection * view * model * vec4(aPos, 1.0);
     
 }

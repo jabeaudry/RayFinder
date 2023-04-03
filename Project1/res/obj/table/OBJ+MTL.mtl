@@ -1,51 +1,35 @@
-# 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
-# File Created: 05.11.2018 15:35:21
-
-newmtl Material__8bvn
-	Ns 10.0000
-	Ni 1.5000
-	d 1.0000
-	Tr 0.0000
-	Tf 1.0000 1.0000 1.0000 
-	illum 2
-	Ka 0.5880 0.5880 0.5880
-	Kd 0.5880 0.5880 0.5880
-	Ks 0.0000 0.0000 0.0000
-	Ke 0.0000 0.0000 0.0000
-	map_Ka Simple_Stone_Mtl_Marble_6k.jpg
-	map_Kd Simple_Stone_Mtl_Marble_6k.jpg
-	map_Ks Simple_Stone_Mtl_Marble_6k.jpg
-	map_bump Simple_Stone_Mtl_Marble_6k-nrm.jpg
-	bump Simple_Stone_Mtl_Marble_6k-nrm.jpg
+# Blender 3.5.0 MTL File: 'None'
+# www.blender.org
 
 newmtl Material__7cv
-	Ns 10.0000
-	Ni 1.5000
-	d 1.0000
-	Tr 0.0000
-	Tf 1.0000 1.0000 1.0000 
-	illum 2
-	Ka 0.5880 0.5880 0.5880
-	Kd 0.5880 0.5880 0.5880
-	Ks 0.0000 0.0000 0.0000
-	Ke 0.0000 0.0000 0.0000
-	map_Ka Simple_Stone_Mtl_Marble_3k.jpg
-	map_Kd Simple_Stone_Mtl_Marble_3k.jpg
-	map_Ks Simple_Stone_Mtl_Marble_3k.jpg
-	map_bump Simple_Stone_Mtl_Marble_3k-nrm.jpg
-	bump Simple_Stone_Mtl_Marble_3k-nrm.jpg
+Ns 70.000005
+Ka 1.000000 1.000000 1.000000
+Ks 0.630000 0.630000 0.630000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Simple_Stone_Mtl_Marble_3k.jpg
+
+
+newmtl Material__8bvn
+Ns 10.000005
+Ka 1.000000 1.000000 1.000000
+Ks 0.630000 0.630000 0.630000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Simple_Stone_Mtl_Marble_6k.jpg
+
 
 newmtl Material__9vbn
-	Ns 10.0000
-	Ni 1.5000
-	d 1.0000
-	Tr 0.0000
-	Tf 1.0000 1.0000 1.0000 
-	illum 2
-	Ka 0.5880 0.5880 0.5880
-	Kd 0.5880 0.5880 0.5880
-	Ks 0.0000 0.0000 0.0000
-	Ke 0.0000 0.0000 0.0000
-	map_Ka Bronze_09835_mask.jpg
-	map_Kd Bronze_09835_mask.jpg
-	map_Ks PO075-Copper-Batik-1400.jpg
+Ns 10.000005
+Ka 1.000000 1.000000 1.000000
+Ks 0.630000 0.630000 0.630000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Bronze_09835_mask.jpg
+

@@ -1,43 +1,32 @@
-# 3ds Max Wavefront OBJ Exporter v0.94b - (c)2007 guruware
-# File Created: 31.01.2022 14:30:43
-
-newmtl Leaf
-	Ns 10.0000
-	Ni 1.5000
-	d 1.0000
-	Tr 1.0000
-	Tf 1.0000 1.0000 1.0000 
-	illum 2
-	Ka 0.0000 0.0000 0.0000
-	Kd 0.4353 0.8000 0.2353
-	Ks 0.0000 0.0000 0.0000
-	Ke 0.0000 0.0000 0.0000
-	map_Kd palmLeaf.jpg
-
-newmtl Ground
-	Ns 0.0000
-	Ni 1.5000
-	d 1.0000
-	Tr 1.0000
-	Tf 1.0000 1.0000 1.0000 
-	illum 2
-	Ka 0.0000 0.0000 0.0000
-	Kd 0.2902 0.2902 0.2902
-	Ks 0.0000 0.0000 0.0000
-	Ke 0.0000 0.0000 0.0000
-	map_Ka ground.jpg
-	map_Kd ground.jpg
+# Blender 3.5.0 MTL File: 'None'
+# www.blender.org
 
 newmtl Ceramic
-	Ns 70.0000
-	Ni 1.5000
-	d 1.0000
-	Tr 1.0000
-	Tf 1.0000 1.0000 1.0000 
-	illum 2
-	Ka 0.0000 0.0000 0.0000
-	Kd 0.9529 0.9529 0.9529
-	Ks 0.6300 0.6300 0.6300
-	Ke 0.0000 0.0000 0.0000
-	map_Ka granular_concrete_diff_4k.jpg
-	map_Kd granular_concrete_diff_4k.jpg
+Ns 70.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.630000 0.630000 0.630000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd granular_concrete_diff_4k.jpg
+
+newmtl Ground
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd ground.jpg
+
+newmtl Leaf
+Ns 10.000005
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd palmLeaf.jpg
