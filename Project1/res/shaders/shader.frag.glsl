@@ -10,6 +10,7 @@ uniform sampler2D texture_diffuse1;
 //uniform sampler2D texture_specular1;
 uniform sampler2D shadowMap;
 
+
 uniform vec3 viewPos;
 uniform vec3 lightPos;
 
@@ -35,7 +36,7 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     // Bias to avoid self-shadowing and incorrect depth comparisons
     vec3 normal = normalize(Normal);
     vec3 lightDir = normalize(lightPos - FragPos);
-    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.004);
+    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
     float shadow = 0;
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
     for(int x = -1; x <= 1; ++x)
