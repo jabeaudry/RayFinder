@@ -30,6 +30,9 @@
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define CLAMP(x, upper, lower) (max(upper, min(x, lower)))
 
+// camera
+Camera camera(glm::vec3(1.1f, 1.80f, -0.35f));   //for prod
+//Camera camera(glm::vec3(1.1f, 21.80f, -0.35f));   //for testing
 
 
 float startHour = 0.0f;
@@ -56,21 +59,8 @@ void calculateSkyColor(float zenith);
 
 glm::vec3 calculatesunPosition(float latitude, float longitude, float time) {
 	// For simplicity, we'll use a basic implementation of the SPA algorithm
-	int yday = 175;
 	float gha = 15.0f * (12.0f - time); // Greenwich Hour Angle
-	float addedAngle = 0;
-	if (windowDirection == 2) {
-		addedAngle += 90;
-	}
-	else if (windowDirection == 3) {
-		addedAngle += 180;
-	}
-	else if (windowDirection == 4) {
-		addedAngle += 270;
-	}
-	else if (windowDirection == 1) {
-		addedAngle += 0;
-	}
+
 	float declination = 23.45f * sin(glm::radians(360.0f * (284.0f + yday) / 365.0f)); // Declination angle
 
 	float latRad = glm::radians(latitude);
@@ -87,32 +77,53 @@ glm::vec3 calculatesunPosition(float latitude, float longitude, float time) {
 	float cosAzimuth = (cosZenith - sin(latRad) * sin(zenith)) / (cos(latRad) * cos(zenith));
 	float azimuth = glm::atan(sinAzimuth, cosAzimuth) ;
 
-	// Modify the azimuth angle to make the sun's movement more visually circular
-	azimuth += glm::radians(180.0f - longitude) ;
-
-	float distance = 10.0f; // Set an arbitrary distance for the sun
-
-	// Adjust the solar azimuth angle based on the window orientation
+	glm::vec3 sunPosition;
+	float distance = 17.0f; // Set an arbitrary distance for the sun
+sunPosition.z = distance * cos(zenith) * sin(azimuth);
+	 //Adjust the solar azimuth angle based on the window orientation
 	switch (windowDirection) {
-	case 1:
+	case 1: // North
+		azimuth += glm::radians(270.0f);
+		sunPosition.z = distance * cos(zenith) * sin(azimuth);
 		break;
-	case 2:
+	case 2: // East
+		azimuth += glm::radians(180.0f);
+		sunPosition.z = distance * cos(zenith) * sin(azimuth);
+		break;
+	case 3: // South
 		azimuth += glm::radians(90.0f);
 		break;
-	case 3:
-		azimuth += glm::radians(180.0f);
-		break;
-	case 4:
-		azimuth += glm::radians(270.0f);
+	case 4: // West
+		sunPosition.z = distance * cos(zenith) * sin(azimuth);
 		break;
 	}
 
 
-
-	glm::vec3 sunPosition;
 	sunPosition.x = distance* cos(zenith) * cos(azimuth);
 	sunPosition.y = distance * sin(zenith);
-	sunPosition.z = -distance * cos(zenith) * sin(azimuth);
+	
+
+	// Adjust the solar azimuth angle based on the window orientation
+	//switch (windowDirection) {
+	//case 1: // North
+	//	sunPosition.y = -sunPosition.y;
+	//	sunPosition.z = -sunPosition.z;
+	//	break;
+	//case 2: // East
+	//	std::swap(sunPosition.x, sunPosition.z);
+	//	sunPosition.y = -sunPosition.y;
+	//	sunPosition.z = -sunPosition.z;
+	//	break;
+	//case 3: // South
+	//	sunPosition.z = -sunPosition.z;
+	//	break;
+	//case 4: // West
+	//	std::swap(sunPosition.x, sunPosition.z);
+	//	sunPosition.x = -sunPosition.x;
+	//	sunPosition.z = -sunPosition.z;
+	//	break;
+	//}
+
 
 	std::cout << sunPosition.z << "     " << sunPosition.y << std::endl;
 
@@ -162,10 +173,6 @@ void processInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 1200;
 const unsigned int SCR_HEIGHT = 800;
 
-// camera
-Camera camera(glm::vec3(1.1f, 1.80f, -0.35f));   //for prod
-//Camera camera(glm::vec3(1.1f, 21.80f, -0.35f));   //for testing
-
 
 
 
@@ -211,7 +218,7 @@ void renderScene(Shader_& shader, Model& room, Model& table, Model& plant, const
 
 	// render the plant model
 	model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(1.25f, 1.28f, -3.52f)); // translate it down so it's at the center of the scene
+	model = glm::translate(model, glm::vec3(1.25f, 1.260f, -3.52f)); // translate it down so it's at the center of the scene
 	model = glm::scale(model, glm::vec3(0.0018f, 0.0018f, 0.0018f));	// it's a bit too big for our scene, so scale it down
 	shader.setMat4("model", model);
 	plant.Draw(shader);
@@ -280,6 +287,7 @@ int main()
 	// configure global opengl state
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
+
 
 	// Shaders
 	// -----------------------------
@@ -418,10 +426,10 @@ int main()
 			// Set up the light's projection and view matrices
 			float near_plane = 1.0f;
 			float far_plane = 20.0f;
-			glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, near_plane, far_plane);
+			glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 
-			glm::vec3 sunDirection = glm::normalize(-sunPosition);
-			glm::mat4 lightView = glm::lookAt(sunPosition,glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			glm::vec3 sunDirection = -glm::normalize(sunPosition);
+			glm::mat4 lightView = glm::lookAt(glm::vec3(0.0f) - sunDirection*13.0f,glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 			// Calculate the light-space matrix
 			glm::mat4 lightSpaceMatrix = lightProjection * lightView;
@@ -465,7 +473,7 @@ int main()
 				ImGui::Text("");
 				ImGui::Text("Window orientation!");
 				bool isChanged = false;
-				ImGui::RadioButton("North", &windowDirection,1);\
+				ImGui::RadioButton("North", &windowDirection,1);
 				ImGui::RadioButton("West", &windowDirection,4);
 				ImGui::RadioButton("East", &windowDirection, 2);
 				ImGui::RadioButton("South", &windowDirection, 3);

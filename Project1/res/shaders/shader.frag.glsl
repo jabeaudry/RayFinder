@@ -60,6 +60,10 @@ float ShadowCalculation(vec4 fragPosLightSpace)
 
 void main(){
 
+    float constant = 1.0;
+    float linear = 0.09;
+    float quadratic = 0.032;
+
     vec3 color = vec3(texture(texture_diffuse1, TexCoords));
     
     // Normalize the normal vector
@@ -71,7 +75,9 @@ void main(){
     // ambient
     vec3 ambient = 0.3 * lightColor;
     // diffuse
+    float distanceToLight = length(lightPos - FragPos);
     vec3 lightDir = normalize(lightPos - FragPos);
+    float attenuation = 1.0 / (constant + linear * distanceToLight + quadratic * (distanceToLight * distanceToLight));
     float diff = max(dot(lightDir, normal), 0.0);
     vec3 diffuse = diff * lightColor;
     // specular
