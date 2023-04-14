@@ -85,8 +85,11 @@ void main(){
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, normal);
     float spec = 0.0;
+   // a clamped dot product between the surface normal and the halfway vector
+   //to get the cosine angle between them that we again raise to a specular shininess exponent:
     vec3 halfwayDir = normalize(lightDir + viewDir);  
-    spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
+    spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);  
+
     vec3 specular = spec * lightColor;    
     // calculate shadow
     float shadow = ShadowCalculation(FragPosLightSpace);                      

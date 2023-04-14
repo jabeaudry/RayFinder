@@ -61,8 +61,7 @@ float totalLightTemp = 0.0f;
 void calculateSkyColor(float zenith);
 
 glm::vec3 calculatesunPosition(float latitude, float longitude, float time) {
-	// For simplicity, we'll use a basic implementation of the SPA algorithm
-	//float solarNoon = 12.0f - (longitude / 15.0f);
+	// SPA algorithm
 	float gha = 15.0f *( 12.0 - time); // Greenwich Hour Angle
 
 	float declination = 23.45f * sin(glm::radians(360.0f * (284.0f + yday) / 365.0f)); // Declination angle
@@ -76,7 +75,7 @@ glm::vec3 calculatesunPosition(float latitude, float longitude, float time) {
 	float zenith = glm::acos(cosZenith);
 
 
-	// Calculate the solar azimuth angle
+	// Calculate the solar azimuth angle=
 	float sinAzimuth = cos(decRad) * sin(glm::radians(gha)) / sin(zenith);
 	float cosAzimuth = (cosZenith - sin(latRad) * sin(zenith)) / (cos(latRad) * cos(zenith));
 	float azimuth = glm::atan(sinAzimuth, cosAzimuth) ;
